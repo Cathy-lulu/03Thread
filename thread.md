@@ -31,7 +31,8 @@
     * [Thread Scheduler Hook Sample](#threadschedulerhooksample)
  
 
-# RT-Thread Management
+Thread Management 
+========================
 
 When we are facing a big task in our daily life, we usually break it down into a number of simple, easy-to-manage smaller tasks. Then, we would deal with these smaller tasks one by one, gradually, the big task is  worked out. In a multi-threaded operating system, developers also need to break down a complex application into multiple small, schedulable, and serialized program units. When tasks are reasonably divided and properly executed, this design allows the system to meet the capacity and time requirements of the real-time system. For example, to have the embedded system to perform such tasks, the system would collect data through sensors and display the data on the screen. In a multi-threaded real-time system, the task can be decomposed into two subtasks. The subtask, as shown in the following figure, reads the sensor data continuously and writes the data into the shared memory. The other subtask periodically reads the data from the shared memory and outputs the sensor data onto the screen.
 
@@ -43,7 +44,8 @@ When a thread runs, it thinks it is hogging the CPU as it runs. The runtime envi
 
 This chapter will be divided into five sections to introduce thread management of RT-Thread. After reading this chapter, readers will have a deeper understanding of the thread management mechanism of RT-Thread. They will have clear answers to questions like what states does a thread have, how to create a thread, why do idle threads exist, etc.  
 
-## Thread Management Features
+Thread Management Features
+------------------
 
 The main function of RT-Thread thread management is to manage and schedule threads. There are two types of threads in the system, namely system thread and user thread. System thread is the thread created by RT-Thread kernel. User thread is the thread created by application. Both types of thread will allocate thread objects from the kernel object container. When the thread is deleted, it will also be deleted from the object container. As shown in the following figure, each thread has important attributes, such as thread control block, thread stack, entry function, and so on.
 
@@ -57,7 +59,8 @@ If it is the interrupt service routine that makes the running condition ready fo
 
 When the scheduler schedules threads and switch them, the current thread context is first saved. When it is switched back to this thread, the scheduler restores the context information of the thread.
 
-## Working Mechanism of Thread
+Working Mechanism of Thread
+--------------
 
 ### Thread Control Block 
 
@@ -256,17 +259,17 @@ rt_thread_t rt_thread_create(const char* name,
 
 When this function is called, the system will allocate a thread handle from the dynamic heap memory and allocates the corresponding space from the dynamic heap memory according to the stack size specified in the parameter. The allocated stack space is aligned in RT_ALIGN_SIZE mode configured in rtconfig.h. The parameters and return values of the thread creation rt_thread_create() are as follows:
 
-|Parameters  |Description                             |
-|------------|----------------------------------------------------------------------------------------|
+| Parameters | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
 | name       | The name of the thread; the maximum length of the thread name is specified by macro RT_NAME_MAX in rtconfig.h, and the extra part is automatically truncated. |
-| entry      | Thread entry function. |
-| parameter  | Thread entry function's parameter.           |
-| stack_size | Thread stack size in bytes.                       |
+| entry      | Thread entry function.                                       |
+| parameter  | Thread entry function's parameter.                           |
+| stack_size | Thread stack size in bytes.                                  |
 | priority   | Priority of the thread. The priority range is based on the system configuration (macro definition RT_THREAD_PRIORITY_MAX in rtconfig.h). If 256-level priority is supported, then the range is from 0 to 255. The smaller the value, the higher the priority, and 0 is the highest priority. |
 | tick       | The time slice size of the thread. The unit of the time slice (tick) is the tick of the operating system. When there are threads with the same priority in the system, this parameter specifies the maximum length of time of a thread for one schedule. At the end of this time slice run, the scheduler automatically selects the next ready state of the same priority thread to run. |
-|**Return**  | ——                                                                                           |
-| thread     | Thread creation succeeds, return thread handle.                   |
-| RT_NULL    | Failed to create thread.                                    |
+| **Return** | ——                                                           |
+| thread     | Thread creation succeeds, return thread handle.              |
+| RT_NULL    | Failed to create thread.                                     |
 
 For some threads created with rt_thread_create(), when not needed or when an error occurs, we can use the following function interface to completely remove the thread from the system:
 
@@ -276,12 +279,12 @@ rt_err_t rt_thread_delete(rt_thread_t thread);
 
 After calling this function, the thread object will be moved out of the thread list and removed from the kernel object manager. Consequently, the stack space occupied by the thread will also be freed, and the reclaimed space will be reused for other memory allocations. In fact, use the rt_thread_delete() function to delete the thread interface is just changing the corresponding thread state to RT_THREAD_CLOSE state and then putting it into rt_thread_defunct queue; the actual delete action (release the thread control block and release the thread stack) needs to be completed later by an idle thread when it is being executed. Thread deletion The parameters and return values of thread deleting rt_thread_delete() interface are shown in the following table:
 
-|**Parameter**  |**Description**        |
-|------------|------------------|
-| thread     | Thread handles to delete |
-|**Return**  | ——               |
-| RT_EOK     | Delete thread successfully. |
-| \-RT_ERROR | Failed to delete thread. |
+| **Parameter** | **Description**             |
+| ------------- | --------------------------- |
+| thread        | Thread handles to delete    |
+| **Return**    | ——                          |
+| RT_EOK        | Delete thread successfully. |
+| \-RT_ERROR    | Failed to delete thread.    |
 
 This function is only valid when the system dynamic heap is enabled (meaning RT_USING_HEAP macro definition is already defined).
 
@@ -299,19 +302,19 @@ rt_err_t rt_thread_init(struct rt_thread* thread,
 
 The thread handle of the static thread (in other words, the thread control block pointer) and the thread stack are provided by the user. A static thread means that the thread control block and the thread running stack are generally set to global variables, which are determined and allocated when compiling. Kernel is not responsible for dynamically allocating memory space. It should be noted that the user-provided stack starting address needs to be system aligned (for example, 4-byte alignment is required on ARM). The parameters and return values of the thread initialization interface rt_thread_init() are as follows:
 
-|**Parameter**   |**Description**                                                                                                                                                                                                        |
-|-----------------|---------------------------------------------------------------------------|
-| thread      | Thread handle. Thread handle is provided by the user and points to the corresponding thread control block memory address.                    |
-| name        | Name of the thread; the maximum length of the thread name is specified by the RT_NAME_MAX macro defined in rtconfig.h, and the extra part is automatically truncated. |
-| entry       | Thread entry function.                                                                                                                                                                              |
-| parameter   | Thread entry function parameter.                                                                                                                                                                |
-| stack_start | Thread stack start address                                                                                                                                                                     |
-| stack_size  | Thread stack size in bytes. Stack space address alignment is required in most systems (for example, alignment to 4-byte addresses in the ARM architecture) |
-| priority    | The priority of the thread. The priority range is based on the system configuration (macro definition RT_THREAD_PRIORITY_MAX in rtconfig.h). If 256 levels of priority are supported, the range is from 0 to 255. The smaller the value, the higher the priority, and 0 is the highest priority. |
-| tick        | The time slice size of the thread. The unit of the time slice (tick) is the tick of the operating system. The unit of the time slice (tick) is the tick of the operating system. When there are threads with the same priority in the system, this parameter specifies the maximum length of time of a thread for one schedule. At the end of this time slice run, the scheduler automatically selects the next ready state of the same priority thread to run. |
-|**Return**   | ——      |
-| RT_EOK      | Thread creation succeeds. |
-| \-RT_ERROR  | Failed to create thread. |
+| **Parameter** | **Description**                                              |
+| ------------- | ------------------------------------------------------------ |
+| thread        | Thread handle. Thread handle is provided by the user and points to the corresponding thread control block memory address. |
+| name          | Name of the thread; the maximum length of the thread name is specified by the RT_NAME_MAX macro defined in rtconfig.h, and the extra part is automatically truncated. |
+| entry         | Thread entry function.                                       |
+| parameter     | Thread entry function parameter.                             |
+| stack_start   | Thread stack start address                                   |
+| stack_size    | Thread stack size in bytes. Stack space address alignment is required in most systems (for example, alignment to 4-byte addresses in the ARM architecture) |
+| priority      | The priority of the thread. The priority range is based on the system configuration (macro definition RT_THREAD_PRIORITY_MAX in rtconfig.h). If 256 levels of priority are supported, the range is from 0 to 255. The smaller the value, the higher the priority, and 0 is the highest priority. |
+| tick          | The time slice size of the thread. The unit of the time slice (tick) is the tick of the operating system. The unit of the time slice (tick) is the tick of the operating system. When there are threads with the same priority in the system, this parameter specifies the maximum length of time of a thread for one schedule. At the end of this time slice run, the scheduler automatically selects the next ready state of the same priority thread to run. |
+| **Return**    | ——                                                           |
+| RT_EOK        | Thread creation succeeds.                                    |
+| \-RT_ERROR    | Failed to create thread.                                     |
 
 For threads initialized with rt_thread_init() , using rt_thread_detach() will cause the thread object to be detached from the thread queue and kernel object manager. The detach thread function is as follows:
 
@@ -321,12 +324,12 @@ rt_err_t rt_thread_detach (rt_thread_t thread);
 
 Parameters and return values of the thread detached from the interface rt_thread_detach() are as follows:
 
-|**Parameters**  |**Description**                                                  |
-|------------|------------------------------------------------------------|
-| thread     | Thread handle, which should be the thread handle initialized by rt_thread_init. |
-|**Return**  | ——                                                         |
-| RT_EOK     | Thread detached successfully.                  |
-| \-RT_ERROR | Thread detachment failed.                      |
+| **Parameters** | **Description**                                              |
+| -------------- | ------------------------------------------------------------ |
+| thread         | Thread handle, which should be the thread handle initialized by rt_thread_init. |
+| **Return**     | ——                                                           |
+| RT_EOK         | Thread detached successfully.                                |
+| \-RT_ERROR     | Thread detachment failed.                                    |
 
 This function interface corresponds to the rt_thread_delete() function. The object operated by the rt_thread_delete() function is the handle created by rt_thread_create(), and the object operated by the rt_thread_detach() function is the thread control block initialized with the rt_thread_init() function. Again, the thread itself should not call this interface to detach thread itself.
 
@@ -340,12 +343,12 @@ rt_err_t rt_thread_startup(rt_thread_t thread);
 
 When this function is called, the state of the thread is changed to ready state and placed in the corresponding priority queue for scheduling. If the newly started thread has a higher priority than the current thread, it will immediately switch to the new thread. The parameters and return values of the thread start interface rt_thread_startup() are as follows:
 
-|**Parameter**  |**Description**    |
-|------------|--------------|
-| thread     | Thread handle. |
-|**Return**  | ——           |
-| RT_EOK     | Thread started successfully. |
-| \-RT_ERROR | Thread start failed. |
+| **Parameter** | **Description**              |
+| ------------- | ---------------------------- |
+| thread        | Thread handle.               |
+| **Return**    | ——                           |
+| RT_EOK        | Thread started successfully. |
+| \-RT_ERROR    | Thread start failed.         |
 
 ### Obtaining Current Thread
 
@@ -357,10 +360,10 @@ rt_thread_t rt_thread_self(void);
 
 The return value of this interface is shown in the following table:
 
-|**Return**|**Description**            |
-|----------|----------------------|
-| thread   | The currently running thread handle. |
-| RT_NULL  | Failed, the scheduler has not started yet. |
+| **Return** | **Description**                            |
+| ---------- | ------------------------------------------ |
+| thread     | The currently running thread handle.       |
+| RT_NULL    | Failed, the scheduler has not started yet. |
 
 ### Making Thread Release Processor Resources
 
@@ -386,11 +389,11 @@ rt_err_t rt_thread_mdelay(rt_int32_t ms);
 
 These three function interfaces have the same effect. Calling them can cause the current thread to suspend for a specified period of time. After, the thread will wake up and enter the ready state again. This function accepts a parameter that specifies the sleep time of the thread. The parameters and return values of the thread sleep interface rt_thread_sleep/delay/mdelay() are as follows:
 
-|**Parameters**|Description                                                    |
-| -------- | ------------------------------------------------------------ |
-| tick/ms  | Thread sleep time：<br>The input parameter tick of rt_thread_sleep/rt_thread_delay is in units of 1 OS Tick; <br>The input parameter ms of rt_thread_mdelay is in units of 1ms; |
-|**Return**| ——                                                           |
-| RT_EOK   | Successful operation.                                |
+| **Parameters** | Description                                                  |
+| -------------- | ------------------------------------------------------------ |
+| tick/ms        | Thread sleep time：<br>The input parameter tick of rt_thread_sleep/rt_thread_delay is in units of 1 OS Tick; <br>The input parameter ms of rt_thread_mdelay is in units of 1ms; |
+| **Return**     | ——                                                           |
+| RT_EOK         | Successful operation.                                        |
 
 ### Suspend and Resume Thread
 
@@ -404,12 +407,12 @@ rt_err_t rt_thread_suspend (rt_thread_t thread);
 
 The parameters and return values of the thread suspend interface rt_thread_suspend() are shown in the following table:
 
-|**Parameters**  |Description                                    |
-|------------|----------------------------------------------|
-| thread     | Thread handle.                       |
-|**Return**  | ——                                           |
-| RT_EOK     | Thread suspends successfully  |
-| \-RT_ERROR | Thread suspension failed because the thread is not in ready state. |
+| **Parameters** | Description                                                  |
+| -------------- | ------------------------------------------------------------ |
+| thread         | Thread handle.                                               |
+| **Return**     | ——                                                           |
+| RT_EOK         | Thread suspends successfully                                 |
+| \-RT_ERROR     | Thread suspension failed because the thread is not in ready state. |
 
 >Generally, you should not use this function to suspend the thread itself, if you really need to use rt_thread_suspend() to suspend the current task, immediately after calling function rt_thread_suspend(),  rt_schedule() needs to be called. 
 
@@ -423,11 +426,11 @@ rt_err_t rt_thread_resume (rt_thread_t thread);
 
 The parameters and return values of the thread recovery interface rt_thread_resume() are as follows:
 
-|Parameter  |**Description**                                                     |
-|------------|---------------------------------------------------------------|
-| thread     | Thread handle.                                        |
-|**Return**  | ——                                                            |
-| RT_EOK     | Thread resumed successfully.                  |
+| Parameter  | **Description**                                              |
+| ---------- | ------------------------------------------------------------ |
+| thread     | Thread handle.                                               |
+| **Return** | ——                                                           |
+| RT_EOK     | Thread resumed successfully.                                 |
 | \-RT_ERROR | Thread recovery failed because the state of the thread is not RT_THREAD_SUSPEND state |
 
 ### Control Thread 
@@ -440,14 +443,14 @@ rt_err_t rt_thread_control(rt_thread_t thread, rt_uint8_t cmd, void* arg);
 
 The parameters and return values of the thread control interface rt_thread_control() are as follows:
 
-|Function Parameters|**Description**    |
-|--------------|--------------|
-| thread       | Thread handle. |
-| cmd          | Control command demand. |
-| arg          | Control parameter. |
-|**Return**    | ——           |
-| RT_EOK       | Control execution is correct. |
-| \-RT_ERROR   | Failure. |
+| Function Parameters | **Description**               |
+| ------------------- | ----------------------------- |
+| thread              | Thread handle.                |
+| cmd                 | Control command demand.       |
+| arg                 | Control parameter.            |
+| **Return**          | ——                            |
+| RT_EOK              | Control execution is correct. |
+| \-RT_ERROR          | Failure.                      |
 
 Demands supported by control command demand cmd include:
 
@@ -468,21 +471,21 @@ rt_err_t rt_thread_idle_delhook(void (*hook)(void));
 
 Input parameters and return values of setting idle hook function rt_thread_idle_sethook() are as shown in the following table:
 
-|**Function Parameters**|Description      |
-|--------------|----------------|
-| hook         | Set hook function. |
-|**Return**    | ——             |
-| RT_EOK       | Set Successfully. |
-| \-RT_EFULL   | Set fail. |
+| **Function Parameters** | Description        |
+| ----------------------- | ------------------ |
+| hook                    | Set hook function. |
+| **Return**              | ——                 |
+| RT_EOK                  | Set Successfully.  |
+| \-RT_EFULL              | Set fail.          |
 
 Input parameters and return values of deleting the idle hook function rt_thread_idle_delhook() are as shown in the following table:
 
-|Function Parameters|Description      |
-|--------------|----------------|
-| hook         | Deleted hook function. |
-|**Return**    | ——             |
-| RT_EOK       | Successfully deleted. |
-| \-RT_ENOSYS  | Failed to delete. |
+| Function Parameters | Description            |
+| ------------------- | ---------------------- |
+| hook                | Deleted hook function. |
+| **Return**          | ——                     |
+| RT_EOK              | Successfully deleted.  |
+| \-RT_ENOSYS         | Failed to delete.      |
 
 >An idle thread is a thread whose state is always ready. Therefore, hook function must ensure that idle threads will not be suspended at any time. Functions like rt_thread_delay(), rt_sem_take(), etc can't be used because they may cause the thread to suspend.
 
@@ -496,9 +499,9 @@ void rt_scheduler_sethook(void (*hook)(struct rt_thread* from, struct rt_thread*
 
 Input parameters for setting the scheduler hook function are shown in the following table:
 
-|**Function Parameters**|Description                  |
-|--------------|----------------------------|
-| hook         | Represents a user-defined hook function pointer |
+| **Function Parameters** | Description                                     |
+| ----------------------- | ----------------------------------------------- |
+| hook                    | Represents a user-defined hook function pointer |
 
 Hook function hook() is declared as follows:
 
@@ -508,10 +511,10 @@ void hook(struct rt_thread* from, struct rt_thread* to);
 
 Input parameters for the scheduler hook function hook() are shown in the following table:
 
-|Function Parameters|**Description**                          |
-|--------------|------------------------------------|
-| from         | Indicates the thread control block pointer that the system wants to switch out |
-| to           | Indicates the thread control block pointer that the system wants to switch out |
+| Function Parameters | **Description**                                              |
+| ------------------- | ------------------------------------------------------------ |
+| from                | Indicates the thread control block pointer that the system wants to switch out |
+| to                  | Indicates the thread control block pointer that the system wants to switch out |
 
 >Please carefully compile your hook function, any carelessness is likely to cause the entire system to run abnormally (in this hook function, it is basically not allowed to call the system API, and should not cause the current running context to suspend).
 
