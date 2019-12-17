@@ -1,5 +1,5 @@
 # Table of Contents
-* [RT-Thread Management](#rt-threadmanagement)
+* [RT-Thread Management](#RT-ThreadManagement)
 * [Working Mechanism of Thread](#workingmechanismofthread)
   * [Thread Control Block](#threadcontrolblock)
   * [Thread Important Attributes](#threadimportantattributes)
