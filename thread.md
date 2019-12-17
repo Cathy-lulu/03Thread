@@ -31,7 +31,7 @@
     * [Thread Scheduler Hook Sample](#threadschedulerhooksample)
  
 
-#rt-threadmanagement
+# RT-Thread Management
 
 When we are facing a big task in our daily life, we usually break it down into a number of simple, easy-to-manage smaller tasks. Then, we would deal with these smaller tasks one by one, gradually, the big task is  worked out. In a multi-threaded operating system, developers also need to break down a complex application into multiple small, schedulable, and serialized program units. When tasks are reasonably divided and properly executed, this design allows the system to meet the capacity and time requirements of the real-time system. For example, to have the embedded system to perform such tasks, the system would collect data through sensors and display the data on the screen. In a multi-threaded real-time system, the task can be decomposed into two subtasks. The subtask, as shown in the following figure, reads the sensor data continuously and writes the data into the shared memory. The other subtask periodically reads the data from the shared memory and outputs the sensor data onto the screen.
 
@@ -43,8 +43,7 @@ When a thread runs, it thinks it is hogging the CPU as it runs. The runtime envi
 
 This chapter will be divided into five sections to introduce thread management of RT-Thread. After reading this chapter, readers will have a deeper understanding of the thread management mechanism of RT-Thread. They will have clear answers to questions like what states does a thread have, how to create a thread, why do idle threads exist, etc.  
 
-Thread Management Features
-------------------
+## Thread Management Features
 
 The main function of RT-Thread thread management is to manage and schedule threads. There are two types of threads in the system, namely system thread and user thread. System thread is the thread created by RT-Thread kernel. User thread is the thread created by application. Both types of thread will allocate thread objects from the kernel object container. When the thread is deleted, it will also be deleted from the object container. As shown in the following figure, each thread has important attributes, such as thread control block, thread stack, entry function, and so on.
 
@@ -58,8 +57,7 @@ If it is the interrupt service routine that makes the running condition ready fo
 
 When the scheduler schedules threads and switch them, the current thread context is first saved. When it is switched back to this thread, the scheduler restores the context information of the thread.
 
-Working Mechanism of Thread
---------------
+## Working Mechanism of Thread
 
 ### Thread Control Block 
 
